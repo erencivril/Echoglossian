@@ -37,6 +37,8 @@ internal static class TranslatorEngineMap
             Echoglossian.TransEngines.OpenRouter => "OpenRouterTranslator",
             Echoglossian.TransEngines.LmStudio => "LmStudioTranslator",
             Echoglossian.TransEngines.Claude => "ClaudeTranslator",
+            Echoglossian.TransEngines.GeminiOAuth => "GeminiOAuthTranslator",
+            Echoglossian.TransEngines.CodexOAuth => "CodexOAuthTranslator",
             _ => throw new NotSupportedException($"Translation engine {engine} is not supported."),
         };
     }

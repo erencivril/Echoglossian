@@ -97,6 +97,11 @@ public partial class Echoglossian : IDalamudPlugin
   public static TranslationService TranslationService;
 
   /// <summary>
+  ///     Provides OAuth token management for GeminiOAuth and CodexOAuth translation engines.
+  /// </summary>
+  public static OAuthTokenProvider? OAuthTokenProvider;
+
+  /// <summary>
   /// The directory where the plugin's configuration files are stored.
   /// </summary>
   public static string ConfigDirectory;
@@ -291,6 +296,8 @@ public partial class Echoglossian : IDalamudPlugin
 
     UINewFontHandler = new UINewFontHandler(this.configuration);
 
+    OAuthTokenProvider = new OAuthTokenProvider(PluginLog, PluginInterface);
+
     this.RebuildTranslationServiceSafely();
 
     this.queuedTranslationBroker = new QueuedTranslationBroker(
@@ -480,6 +487,8 @@ public partial class Echoglossian : IDalamudPlugin
 
       this.UnregisterQuestToastRuntime();
       this.queuedTranslationBroker.Dispose();
+      OAuthTokenProvider?.Dispose();
+      OAuthTokenProvider = null;
 
       PluginInterface.UiBuilder.OpenMainUi -= this.ConfigWindow;
       PluginInterface.UiBuilder.OpenConfigUi -= this.ConfigWindow;

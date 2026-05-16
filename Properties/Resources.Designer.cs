@@ -2916,6 +2916,60 @@ namespace Echoglossian.Properties {
                 return ResourceManager.GetString("CouldNotFetchOllamaModels", resourceCulture);
             }
         }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string SettingsForGeminiOAuthText {
+            get {
+                return ResourceManager.GetString("SettingsForGeminiOAuthText", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string GeminiOAuthNotSignedIn {
+            get {
+                return ResourceManager.GetString("GeminiOAuthNotSignedIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string GeminiOAuthRateLimited {
+            get {
+                return ResourceManager.GetString("GeminiOAuthRateLimited", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string SettingsForCodexOAuthText {
+            get {
+                return ResourceManager.GetString("SettingsForCodexOAuthText", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string CodexOAuthNotSignedIn {
+            get {
+                return ResourceManager.GetString("CodexOAuthNotSignedIn", resourceCulture);
+            }
+        }
+
+        /// <summary>
+        ///   Looks up a localized string.
+        /// </summary>
+        public static string CodexOAuthRateLimited {
+            get {
+                return ResourceManager.GetString("CodexOAuthRateLimited", resourceCulture);
+            }
+        }
     }
 }
 

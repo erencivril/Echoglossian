@@ -1183,4 +1183,92 @@
   <data name="ClaudeModelTooltipOpus41" xml:space="preserve">
     <value>Highest-tier Claude model when you want maximum quality.</value>
   </data>
+
+  <!-- GeminiOAuth -->
+  <data name="SettingsForGeminiOAuthText" xml:space="preserve">
+    <value>Gemini OAuth Settings (Google AI Pro / Code Assist — no API key required)</value>
+  </data>
+  <data name="GeminiOAuthNotSignedIn" xml:space="preserve">
+    <value>[Gemini OAuth] Please sign in with your Google account in plugin settings.</value>
+  </data>
+  <data name="GeminiOAuthRateLimited" xml:space="preserve">
+    <value>[Gemini OAuth] Rate limit reached. Please switch to another model in settings.</value>
+  </data>
+  <data name="GeminiOAuthSignInButton" xml:space="preserve">
+    <value>Sign in with Google</value>
+  </data>
+  <data name="GeminiOAuthSignOutButton" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="GeminiOAuthSignedInAs" xml:space="preserve">
+    <value>Signed in as:</value>
+  </data>
+  <data name="GeminiOAuthNotConnected" xml:space="preserve">
+    <value>Not signed in — click Sign in with Google to authenticate.</value>
+  </data>
+  <data name="GeminiOAuthSigningIn" xml:space="preserve">
+    <value>Opening browser for Google sign-in...</value>
+  </data>
+  <data name="GeminiOAuthSignInFailed" xml:space="preserve">
+    <value>Sign-in failed. Please try again.</value>
+  </data>
+  <data name="GeminiOAuthTestConnection" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="GeminiOAuthTestOk" xml:space="preserve">
+    <value>OK — translation received.</value>
+  </data>
+  <data name="GeminiOAuthTestFailed" xml:space="preserve">
+    <value>Test failed — check your sign-in and model selection.</value>
+  </data>
+
+  <!-- CodexOAuth -->
+  <data name="SettingsForCodexOAuthText" xml:space="preserve">
+    <value>Codex OAuth Settings (ChatGPT Plus / Pro — no API key required)</value>
+  </data>
+  <data name="CodexOAuthNotSignedIn" xml:space="preserve">
+    <value>[Codex OAuth] Please sign in with your OpenAI account in plugin settings.</value>
+  </data>
+  <data name="CodexOAuthRateLimited" xml:space="preserve">
+    <value>[Codex OAuth] Rate limit reached. Please switch to another model in settings.</value>
+  </data>
+  <data name="CodexOAuthSignInButton" xml:space="preserve">
+    <value>Sign in with OpenAI (ChatGPT)</value>
+  </data>
+  <data name="CodexOAuthSignOutButton" xml:space="preserve">
+    <value>Sign out</value>
+  </data>
+  <data name="CodexOAuthSignedInAs" xml:space="preserve">
+    <value>Signed in as:</value>
+  </data>
+  <data name="CodexOAuthNotConnected" xml:space="preserve">
+    <value>Not signed in — click Sign in with OpenAI to authenticate.</value>
+  </data>
+  <data name="CodexOAuthSigningIn" xml:space="preserve">
+    <value>Opening browser for OpenAI sign-in...</value>
+  </data>
+  <data name="CodexOAuthSignInFailed" xml:space="preserve">
+    <value>Sign-in failed. Please try again.</value>
+  </data>
+  <data name="CodexOAuthTestConnection" xml:space="preserve">
+    <value>Test connection</value>
+  </data>
+  <data name="CodexOAuthTestOk" xml:space="preserve">
+    <value>OK — translation received.</value>
+  </data>
+  <data name="CodexOAuthTestFailed" xml:space="preserve">
+    <value>Test failed — check your sign-in and model selection.</value>
+  </data>
+  <data name="GeminiOAuthSignInError" xml:space="preserve">
+    <value>Sign-in failed: {0}</value>
+  </data>
+  <data name="GeminiOAuthTestingConnection" xml:space="preserve">
+    <value>Testing connection...</value>
+  </data>
+  <data name="CodexOAuthSignInError" xml:space="preserve">
+    <value>Sign-in failed: {0}</value>
+  </data>
+  <data name="CodexOAuthTestingConnection" xml:space="preserve">
+    <value>Testing connection...</value>
+  </data>
 </root>

@@ -34,7 +34,8 @@ public class TranslationService
   public TranslationService(
       Config config,
       IPluginLog pluginLog,
-      Sanitizer sanitizer)
+      Sanitizer sanitizer,
+      IOAuthTokenProvider? oauthProvider = null)
   {
     this.debugLog = message => PluginRuntimeLog.Debug(pluginLog, message);
     this.sanitizeText = sanitizer.Sanitize;
@@ -62,7 +63,8 @@ public class TranslationService
     this.translator = TranslatorFactory.Create(
         chosenEngine,
         config,
-        pluginLog);
+        pluginLog,
+        oauthProvider);
   }
 
   /// <summary>

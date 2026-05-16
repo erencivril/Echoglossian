@@ -20,10 +20,15 @@ public static class TranslatorFactory
     /// <exception cref="NotSupportedException">
     ///     Thrown when the engine cannot be instantiated through this factory.
     /// </exception>
+    /// <summary>
+    ///     Creates one translator instance for the requested engine, with optional
+    ///     OAuth token provider for engines that authenticate via browser sign-in.
+    /// </summary>
     public static ITranslator Create(
         Echoglossian.TransEngines engine,
         Config config,
-        IPluginLog pluginLog)
+        IPluginLog pluginLog,
+        IOAuthTokenProvider? oauthProvider = null)
     {
         return engine switch
         {
@@ -65,6 +70,18 @@ public static class TranslatorFactory
                 new LmStudioTranslator(pluginLog, config),
             Echoglossian.TransEngines.Claude =>
                 new ClaudeTranslator(pluginLog, config),
+            Echoglossian.TransEngines.GeminiOAuth =>
+                new GeminiOAuthTranslator(
+                    pluginLog,
+                    config,
+                    oauthProvider ?? throw new InvalidOperationException(
+                        "GeminiOAuth engine requires an IOAuthTokenProvider.")),
+            Echoglossian.TransEngines.CodexOAuth =>
+                new CodexOAuthTranslator(
+                    pluginLog,
+                    config,
+                    oauthProvider ?? throw new InvalidOperationException(
+                        "CodexOAuth engine requires an IOAuthTokenProvider.")),
             _ => throw new NotSupportedException(
                 $"Translation engine {engine} is not supported."),
         };

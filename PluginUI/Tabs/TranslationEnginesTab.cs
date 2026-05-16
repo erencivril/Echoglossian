@@ -161,6 +161,12 @@ public static class TranslationEnginesTab
             case Echoglossian.TransEngines.Claude:
                 changed |= ClaudeEngineUI.Draw(config, promptManager);
                 break;
+            case Echoglossian.TransEngines.GeminiOAuth:
+                changed |= GeminiOAuthEngineUI.Draw(config, promptManager);
+                break;
+            case Echoglossian.TransEngines.CodexOAuth:
+                changed |= CodexOAuthEngineUI.Draw(config, promptManager);
+                break;
             default:
                 ImGui.Text(Resources.NoSettingsForEngine);
                 break;
@@ -196,6 +202,8 @@ public static class TranslationEnginesTab
             Echoglossian.TransEngines.OpenRouter => "OpenRouter",
             Echoglossian.TransEngines.LmStudio => "LmStudio",
             Echoglossian.TransEngines.Claude => "Claude",
+            Echoglossian.TransEngines.GeminiOAuth => "Gemini (OAuth)",
+            Echoglossian.TransEngines.CodexOAuth => "Codex (OAuth)",
             _ => engine.ToString(),
         };
     }

@@ -17,6 +17,9 @@ global using System.IO;
 global using System.Linq;
 global using System.Net;
 global using System.Net.Http.Headers;
+global using System.Net.Sockets;
+global using System.Security.Cryptography;
+global using System.Threading.Tasks;
 global using System.Numerics;
 global using System.Reflection;
 global using System.Runtime.InteropServices;
@@ -76,6 +79,7 @@ global using Echoglossian.PluginUI;
 global using Echoglossian.PluginUI.EngineConfigUI;
 global using Echoglossian.PluginUI.Helpers;
 global using Echoglossian.Properties;
+global using Echoglossian.Services.OAuth;
 global using Echoglossian.Translators;
 global using Echoglossian.UIOverlays.TranslationOverlay;
 

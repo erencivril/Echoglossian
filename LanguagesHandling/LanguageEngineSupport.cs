@@ -55,6 +55,8 @@ namespace Echoglossian.LanguagesHandling
         private const int OpenRouter = 12;
         private const int LmStudio = 13;
         private const int Claude = 14;
+        private const int GeminiOAuth = 15;
+        private const int CodexOAuth = 16;
 
         /// <summary>
         /// Engines treated as broadly multilingual (no fixed official "translation language" list).
@@ -62,7 +64,7 @@ namespace Echoglossian.LanguagesHandling
         /// </summary>
         private static readonly int[] BroadCoverageLlms =
         {
-            ChatGPT, DeepSeek, Gemini, OpenRouter, Ollama, LmStudio, Claude,
+            ChatGPT, DeepSeek, Gemini, OpenRouter, Ollama, LmStudio, Claude, GeminiOAuth, CodexOAuth,
         };
 
         /// <summary>

@@ -235,6 +235,28 @@ public class Config : IPluginConfiguration
   /// <summary>API key for Gemini translator.</summary>
   [DefaultValue("")] public string? GeminiTranslatorApiKey = string.Empty;
 
+  // ─── GeminiOAuth (OAuth-authenticated Gemini — no API key) ──────────────────
+
+  /// <summary>Model ID used for GeminiOAuth translations.</summary>
+  [DefaultValue("gemini-2.5-flash")] public string? GeminiOAuthModel = "gemini-2.5-flash";
+
+  /// <summary>E-mail of the Google account currently signed in for GeminiOAuth.</summary>
+  [DefaultValue("")] public string? GeminiOAuthAccountEmail = string.Empty;
+
+  /// <summary>Custom prompt template for GeminiOAuth translations.</summary>
+  [DefaultValue("")] public string GeminiOAuthPrompt = string.Empty;
+
+  // ─── CodexOAuth (OAuth-authenticated OpenAI Codex — no API key) ─────────────
+
+  /// <summary>Model ID used for CodexOAuth translations.</summary>
+  [DefaultValue("gpt-5-codex")] public string? CodexOAuthModel = "gpt-5-codex";
+
+  /// <summary>E-mail of the OpenAI account currently signed in for CodexOAuth.</summary>
+  [DefaultValue("")] public string? CodexOAuthAccountEmail = string.Empty;
+
+  /// <summary>Custom prompt template for CodexOAuth translations.</summary>
+  [DefaultValue("")] public string CodexOAuthPrompt = string.Empty;
+
   /// <summary>Selected version of Google Translate API (1 or 2).</summary>
   [DefaultValue(2)] public int GoogleTranslateVersion = 2;
 

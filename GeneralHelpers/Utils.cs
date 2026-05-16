@@ -26,6 +26,8 @@ public partial class Echoglossian
     LibreTranslate,
     Ollama,
     LmStudio,
+    GeminiOAuth,
+    CodexOAuth,
   }
 
   /// <summary>
@@ -49,10 +51,12 @@ public partial class Echoglossian
     OpenRouter = 12, // OpenRouter Translator
     LmStudio = 13, // LM Studio Translator
     Claude = 14, // Anthropic Claude Translator
+    GeminiOAuth = 15, // Google Gemini via OAuth (Gemini Code Assist / Google AI Pro)
+    CodexOAuth = 16, // OpenAI Codex via OAuth (ChatGPT Plus/Pro subscription)
 
     All = Google | Deepl | YandexCloud | GTranslate | Amazon | Microsoft |
           ChatGPT | Gemini | DeepSeek | Ollama | LibreTranslate |
-          YandexPublic | OpenRouter | LmStudio | Claude,
+          YandexPublic | OpenRouter | LmStudio | Claude | GeminiOAuth | CodexOAuth,
   }
 
   /// <summary>
@@ -488,7 +492,8 @@ public partial class Echoglossian
       return new TranslationService(
           this.configuration,
           PluginLog,
-          Sanitizer);
+          Sanitizer,
+          OAuthTokenProvider);
     }
     catch (Exception ex)
     {

@@ -71,6 +71,8 @@ Please provide only the translated text in your response, without any explanatio
       Echoglossian.PromptType.YandexCloud => this.config.YandexCloudPrompt,
       Echoglossian.PromptType.Ollama => this.config.OllamaPrompt,
       Echoglossian.PromptType.LmStudio => this.config.LmStudioPrompt,
+      Echoglossian.PromptType.GeminiOAuth => this.config.GeminiOAuthPrompt,
+      Echoglossian.PromptType.CodexOAuth => this.config.CodexOAuthPrompt,
       _ => null,
     };
   }
@@ -97,6 +99,8 @@ Please provide only the translated text in your response, without any explanatio
       case Echoglossian.PromptType.YandexCloud: this.config.YandexCloudPrompt = normalizedPrompt; break;
       case Echoglossian.PromptType.Ollama: this.config.OllamaPrompt = normalizedPrompt; break;
       case Echoglossian.PromptType.LmStudio: this.config.LmStudioPrompt = normalizedPrompt; break;
+      case Echoglossian.PromptType.GeminiOAuth: this.config.GeminiOAuthPrompt = normalizedPrompt; break;
+      case Echoglossian.PromptType.CodexOAuth: this.config.CodexOAuthPrompt = normalizedPrompt; break;
     }
   }
 
@@ -114,6 +118,8 @@ Please provide only the translated text in your response, without any explanatio
       Echoglossian.TransEngines.OpenRouter => Echoglossian.PromptType.OpenRouter,
       Echoglossian.TransEngines.LmStudio => Echoglossian.PromptType.LmStudio,
       Echoglossian.TransEngines.Claude => Echoglossian.PromptType.Claude,
+      Echoglossian.TransEngines.GeminiOAuth => Echoglossian.PromptType.GeminiOAuth,
+      Echoglossian.TransEngines.CodexOAuth => Echoglossian.PromptType.CodexOAuth,
       _ => null,
     };
   }
