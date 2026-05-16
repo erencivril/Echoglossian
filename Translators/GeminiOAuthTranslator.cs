@@ -21,14 +21,12 @@ public class GeminiOAuthTranslator : ITranslator
     private readonly IPluginLog pluginLog;
     private readonly float temperature = 0.1f;
     private readonly ConcurrentTranslationRequestCache translationCache = new();
+    private readonly CodeAssistProjectResolver projectResolver;
 
-    // Gemini Code Assist endpoint (used for Google AI Pro / Code Assist subscribers).
-    private const string CodeAssistEndpoint =
-        "https://cloudcode-pa.googleapis.com/v1internal/projects/-/locations/global/instances/-:generateContent";
-
-    // Fallback endpoint for standard Gemini API (used when Code Assist endpoint returns 403).
-    private const string FallbackEndpointTemplate =
-        "https://generativelanguage.googleapis.com/v1beta/models/{0}:generateContent";
+    // Gemini Code Assist endpoint — required for personal Google accounts (OAuth tokens).
+    // Standard generativelanguage.googleapis.com returns 403 for these tokens.
+    private const string GenerateContentUrl =
+        "https://cloudcode-pa.googleapis.com/v1internal:generateContent";
 
     public GeminiOAuthTranslator(IPluginLog pluginLog, Config config, IOAuthTokenProvider oauthProvider)
     {
@@ -40,6 +38,7 @@ public class GeminiOAuthTranslator : ITranslator
         this.httpClient = new HttpClient();
         this.httpClient.DefaultRequestHeaders.Accept.Add(
             new MediaTypeWithQualityHeaderValue("application/json"));
+        this.projectResolver = new CodeAssistProjectResolver(pluginLog, config, this.httpClient);
     }
 
     public string Translate(string text, string sourceLanguage, string targetLanguage) =>
@@ -73,19 +72,8 @@ public class GeminiOAuthTranslator : ITranslator
         var fixedText = FixText(text);
         var prompt = BuildTranslationPrompt(fixedText, sourceLanguage, targetLanguage);
 
-        var requestBody = new
-        {
-            contents = new[]
-            {
-                new
-                {
-                    parts = new[] { new { text = prompt } },
-                },
-            },
-            generationConfig = new { temperature = this.temperature },
-        };
-
-        var jsonContent = JsonConvert.SerializeObject(requestBody);
+        // Request body built after we resolve the project ID (needs access token).
+        // jsonContent is deferred inside the retry loop where we have the token.
 
         for (var retry = 0; retry <= this.maxRetries; retry++)
         {
@@ -94,9 +82,27 @@ public class GeminiOAuthTranslator : ITranslator
                 var accessToken = await this.oauthProvider.GetAccessTokenAsync(OAuthProvider.Google)
                                                           .ConfigureAwait(false);
 
-                // Build request with current endpoint.
-                var endpoint = this.BuildEndpointUrl();
-                using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
+                var projectId = await this.projectResolver
+                                         .ResolveProjectIdAsync(accessToken, CancellationToken.None)
+                                         .ConfigureAwait(false);
+
+                var requestBody = new
+                {
+                    model = this.model,
+                    project = projectId,
+                    user_prompt_id = Guid.NewGuid().ToString(),
+                    request = new
+                    {
+                        contents = new[]
+                        {
+                            new { role = "user", parts = new[] { new { text = prompt } } },
+                        },
+                        generationConfig = new { temperature = this.temperature },
+                    },
+                };
+                var jsonContent = JsonConvert.SerializeObject(requestBody);
+
+                using var request = new HttpRequestMessage(HttpMethod.Post, GenerateContentUrl);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 request.Content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
@@ -104,10 +110,20 @@ public class GeminiOAuthTranslator : ITranslator
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && retry == 0)
                 {
-                    // Token may have just expired; OAuthTokenProvider will refresh on next call.
                     PluginRuntimeLog.Warning(
                         this.pluginLog,
                         "[GeminiOAuth] Received 401 — will retry with refreshed token.");
+                    await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
+                    continue;
+                }
+
+                if (response.StatusCode == System.Net.HttpStatusCode.Forbidden && retry == 0)
+                {
+                    // Cached project ID may be stale — clear and retry once.
+                    PluginRuntimeLog.Warning(
+                        this.pluginLog,
+                        "[GeminiOAuth] Received 403 — clearing cached project ID and retrying.");
+                    this.projectResolver.ClearCache();
                     await Task.Delay(TimeSpan.FromSeconds(1)).ConfigureAwait(false);
                     continue;
                 }
@@ -138,7 +154,10 @@ public class GeminiOAuthTranslator : ITranslator
                 var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
                 var responseObject = JObject.Parse(responseString);
 
-                var translatedText = responseObject["candidates"]?[0]?["content"]?["parts"]?[0]?["text"]
+                // Code Assist wraps the result in a "response" envelope.
+                var candidatesNode = responseObject["response"]?["candidates"]
+                    ?? responseObject["candidates"];
+                var translatedText = candidatesNode?[0]?["content"]?["parts"]?[0]?["text"]
                     ?.ToString().Trim();
 
                 if (string.IsNullOrEmpty(translatedText))
@@ -185,15 +204,6 @@ public class GeminiOAuthTranslator : ITranslator
         }
 
         return string.Empty;
-    }
-
-    private string BuildEndpointUrl()
-    {
-        // Try the Code Assist endpoint first; it serves Google AI Pro/Code Assist subscribers.
-        // The model is specified in the JSON body's "model" field for Code Assist,
-        // or in the URL path for the generativelanguage endpoint.
-        // For simplicity we always use the Code Assist endpoint and include the model in the body.
-        return CodeAssistEndpoint;
     }
 
     private static string BuildTranslationPrompt(string text, string sourceLanguage, string targetLanguage) =>

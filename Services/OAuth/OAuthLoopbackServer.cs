@@ -14,13 +14,13 @@ public sealed class OAuthLoopbackServer : IDisposable
     private readonly HttpListener listener;
     private bool disposed;
 
-    public OAuthLoopbackServer()
+    public OAuthLoopbackServer(string callbackPath = "/oauth2callback", int? fixedPort = null, int? fallbackPort = null)
     {
-        this.Port = GetFreePort();
-        this.RedirectUri = $"http://127.0.0.1:{this.Port}/oauth2callback";
+        this.Port = fixedPort.HasValue ? TryBindFixed(fixedPort.Value, fallbackPort) : GetFreePort();
+        this.RedirectUri = $"http://localhost:{this.Port}{callbackPath}";
 
         this.listener = new HttpListener();
-        this.listener.Prefixes.Add($"http://127.0.0.1:{this.Port}/");
+        this.listener.Prefixes.Add($"http://localhost:{this.Port}/");
         this.listener.Start();
     }
 
@@ -103,5 +103,20 @@ public sealed class OAuthLoopbackServer : IDisposable
         var port = ((IPEndPoint)tcp.LocalEndpoint).Port;
         tcp.Stop();
         return port;
+    }
+
+    private static int TryBindFixed(int preferred, int? fallback)
+    {
+        try
+        {
+            using var tcp = new TcpListener(IPAddress.Loopback, preferred);
+            tcp.Start();
+            tcp.Stop();
+            return preferred;
+        }
+        catch (SocketException) when (fallback.HasValue)
+        {
+            return fallback.Value;
+        }
     }
 }

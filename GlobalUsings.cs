@@ -81,6 +81,7 @@ global using Echoglossian.PluginUI.Helpers;
 global using Echoglossian.Properties;
 global using Echoglossian.Services.OAuth;
 global using Echoglossian.Translators;
+global using Echoglossian.Translators.GeminiOAuth;
 global using Echoglossian.UIOverlays.TranslationOverlay;
 
 global using FFXIVClientStructs.FFXIV.Client.Game.Event;

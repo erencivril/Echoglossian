@@ -16,7 +16,7 @@ public sealed class OpenAIOAuthClient
     private const string ClientId = "app_EMoamEEZ73f0CkXaXp7hrann";
 
     private const string Scopes =
-        "openai profile email offline_access api.connectors.read api.connectors.invoke";
+        "openid profile email offline_access api.connectors.read api.connectors.invoke";
 
     private readonly HttpClient http = new();
 
@@ -26,7 +26,7 @@ public sealed class OpenAIOAuthClient
     /// </summary>
     public async Task<OAuthTokens> AuthorizeAsync(CancellationToken cancellationToken)
     {
-        using var server = new OAuthLoopbackServer();
+        using var server = new OAuthLoopbackServer("/auth/callback", fixedPort: 1455, fallbackPort: 1457);
         var (verifier, challenge) = PkceHelper.Generate();
         var stateBytes = RandomNumberGenerator.GetBytes(16);
         var state = Convert.ToBase64String(stateBytes).Replace("+", "").Replace("/", "").Replace("=", "");

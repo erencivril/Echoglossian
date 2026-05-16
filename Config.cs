@@ -246,6 +246,9 @@ public class Config : IPluginConfiguration
   /// <summary>Custom prompt template for GeminiOAuth translations.</summary>
   [DefaultValue("")] public string GeminiOAuthPrompt = string.Empty;
 
+  /// <summary>Cached Gemini Code Assist project ID (cloudaicompanionProject) to avoid repeated loadCodeAssist calls.</summary>
+  [DefaultValue(null)] public string? GeminiOAuthCachedProjectId = null;
+
   // ─── CodexOAuth (OAuth-authenticated OpenAI Codex — no API key) ─────────────
 
   /// <summary>Model ID used for CodexOAuth translations.</summary>
