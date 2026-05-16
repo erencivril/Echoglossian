@@ -252,7 +252,7 @@ public class Config : IPluginConfiguration
   // ─── CodexOAuth (OAuth-authenticated OpenAI Codex — no API key) ─────────────
 
   /// <summary>Model ID used for CodexOAuth translations.</summary>
-  [DefaultValue("gpt-5-codex")] public string? CodexOAuthModel = "gpt-5-codex";
+  [DefaultValue("gpt-4o")] public string? CodexOAuthModel = "gpt-4o";
 
   /// <summary>E-mail of the OpenAI account currently signed in for CodexOAuth.</summary>
   [DefaultValue("")] public string? CodexOAuthAccountEmail = string.Empty;

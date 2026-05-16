@@ -14,7 +14,7 @@ namespace Echoglossian.Translators;
 /// </summary>
 public class CodexOAuthTranslator : ITranslator
 {
-    private const string ResponsesEndpoint = "https://chatgpt.com/backend-api/codex/responses";
+    private const string ResponsesEndpoint = "https://api.openai.com/v1/responses";
 
     private readonly HttpClient httpClient;
     private readonly TimeSpan initialBackoff = TimeSpan.FromSeconds(1);
@@ -28,12 +28,9 @@ public class CodexOAuthTranslator : ITranslator
     {
         this.pluginLog = pluginLog;
         this.oauthProvider = oauthProvider;
-        this.model = config.CodexOAuthModel ?? "gpt-5-codex";
+        this.model = config.CodexOAuthModel ?? "gpt-4o";
 
         this.httpClient = new HttpClient();
-        this.httpClient.DefaultRequestHeaders.Add("Accept", "text/event-stream");
-        this.httpClient.DefaultRequestHeaders.Add("OpenAI-Beta", "responses=experimental");
-        // Mimic codex-cli User-Agent to reduce Cloudflare friction.
         this.httpClient.DefaultRequestHeaders.Add("User-Agent", "codex-cli/0.1.2505161131");
     }
 
@@ -89,9 +86,7 @@ public class CodexOAuthTranslator : ITranslator
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
                 request.Content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                using var response = await this.httpClient.SendAsync(
-                    request,
-                    HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
+                using var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && retry == 0)
                 {
@@ -125,8 +120,12 @@ public class CodexOAuthTranslator : ITranslator
                     return $"[{Resources.TranslationError} CodexOAuth {response.StatusCode}]";
                 }
 
-                // Parse SSE stream.
-                var translatedText = await ReadSseResponseAsync(response).ConfigureAwait(false);
+                var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                var responseObject = JObject.Parse(responseString);
+
+                // Responses API: output[0].content[0].text
+                var translatedText = responseObject["output"]?[0]?["content"]?[0]?["text"]
+                    ?.Value<string>()?.Trim();
 
                 if (string.IsNullOrEmpty(translatedText))
                 {
@@ -171,63 +170,6 @@ public class CodexOAuthTranslator : ITranslator
         }
 
         return string.Empty;
-    }
-
-    /// <summary>
-    ///     Reads a Server-Sent Events response stream and accumulates the translated text
-    ///     from <c>response.output_text.delta</c> events.
-    /// </summary>
-    private static async Task<string> ReadSseResponseAsync(HttpResponseMessage response)
-    {
-        using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
-        using var reader = new StreamReader(stream, Encoding.UTF8);
-
-        var sb = new StringBuilder();
-
-        while (!reader.EndOfStream)
-        {
-            var line = await reader.ReadLineAsync().ConfigureAwait(false);
-            if (line == null)
-            {
-                break;
-            }
-
-            if (!line.StartsWith("data: ", StringComparison.Ordinal))
-            {
-                continue;
-            }
-
-            var data = line["data: ".Length..];
-            if (data == "[DONE]")
-            {
-                break;
-            }
-
-            try
-            {
-                var evt = JObject.Parse(data);
-                var type = evt["type"]?.Value<string>();
-
-                if (type == "response.output_text.delta")
-                {
-                    var delta = evt["delta"]?.Value<string>();
-                    if (!string.IsNullOrEmpty(delta))
-                    {
-                        sb.Append(delta);
-                    }
-                }
-                else if (type == "response.completed" || type == "response.failed")
-                {
-                    break;
-                }
-            }
-            catch (JsonException)
-            {
-                // Malformed SSE event — skip.
-            }
-        }
-
-        return sb.ToString().Trim();
     }
 
     private static string BuildSystemPrompt(string sourceLanguage, string targetLanguage) =>

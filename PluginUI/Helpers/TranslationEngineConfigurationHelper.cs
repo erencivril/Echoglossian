@@ -71,6 +71,8 @@ public static class TranslationEngineConfigurationHelper
           (!config.UseLmStudioAuth || HasValue(config.LmStudioApiKey)),
       Echoglossian.TransEngines.Claude => HasValue(config.ClaudeApiKey) &&
           HasValue(config.ClaudeBaseUrl),
+      Echoglossian.TransEngines.GeminiOAuth => true,
+      Echoglossian.TransEngines.CodexOAuth => true,
       _ => false,
     };
   }
