@@ -9,13 +9,13 @@ namespace Echoglossian.Translators.CodexOAuth;
 
 public static class CodexOAuthTextModelDefaults
 {
-    public const string DefaultModelId = "gpt-5";
+    public const string DefaultModelId = "gpt-5.5";
 
     public static readonly List<LlmTextModel> PredefinedModels = new()
     {
         new LlmTextModel(
-            "gpt-5",
-            "⭐ GPT-5 [default]",
+            "gpt-5.5",
+            "⭐ GPT-5.5 (current) [default]",
             true,
             false,
             true,
@@ -23,17 +23,8 @@ public static class CodexOAuthTextModelDefaults
             IsDefault: true,
             "CodexOAuth"),
         new LlmTextModel(
-            "gpt-5-mini",
-            "⚡ GPT-5 Mini",
-            true,
-            false,
-            true,
-            true,
-            IsDefault: false,
-            "CodexOAuth"),
-        new LlmTextModel(
-            "gpt-5.1-codex",
-            "🤖 GPT-5.1 Codex",
+            "gpt-5.4",
+            "🤖 GPT-5.4",
             true,
             false,
             true,
@@ -41,8 +32,8 @@ public static class CodexOAuthTextModelDefaults
             IsDefault: false,
             "CodexOAuth"),
         new LlmTextModel(
-            "codex-mini-latest",
-            "💨 Codex Mini (latest)",
+            "gpt-5.4-mini",
+            "⚡ GPT-5.4 Mini",
             true,
             false,
             true,
@@ -50,8 +41,8 @@ public static class CodexOAuthTextModelDefaults
             IsDefault: false,
             "CodexOAuth"),
         new LlmTextModel(
-            "gpt-4.1",
-            "🔷 GPT-4.1",
+            "gpt-5.3-codex",
+            "🔷 GPT-5.3 Codex",
             true,
             false,
             true,
@@ -59,17 +50,8 @@ public static class CodexOAuthTextModelDefaults
             IsDefault: false,
             "CodexOAuth"),
         new LlmTextModel(
-            "o4-mini",
-            "🔶 o4-mini",
-            true,
-            false,
-            true,
-            false,
-            IsDefault: false,
-            "CodexOAuth"),
-        new LlmTextModel(
-            "o3",
-            "💎 o3",
+            "gpt-5.2",
+            "💎 GPT-5.2",
             true,
             false,
             true,

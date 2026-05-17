@@ -238,7 +238,7 @@ public class Config : IPluginConfiguration
   // ─── GeminiOAuth (OAuth-authenticated Gemini — no API key) ──────────────────
 
   /// <summary>Model ID used for GeminiOAuth translations.</summary>
-  [DefaultValue("gemini-2.5-flash")] public string? GeminiOAuthModel = "gemini-2.5-flash";
+  [DefaultValue("gemini-3.1-pro-preview")] public string? GeminiOAuthModel = "gemini-3.1-pro-preview";
 
   /// <summary>E-mail of the Google account currently signed in for GeminiOAuth.</summary>
   [DefaultValue("")] public string? GeminiOAuthAccountEmail = string.Empty;
@@ -252,7 +252,7 @@ public class Config : IPluginConfiguration
   // ─── CodexOAuth (OAuth-authenticated OpenAI Codex — no API key) ─────────────
 
   /// <summary>Model ID used for CodexOAuth translations.</summary>
-  [DefaultValue("gpt-5")] public string? CodexOAuthModel = "gpt-5";
+  [DefaultValue("gpt-5.5")] public string? CodexOAuthModel = "gpt-5.5";
 
   /// <summary>E-mail of the OpenAI account currently signed in for CodexOAuth.</summary>
   [DefaultValue("")] public string? CodexOAuthAccountEmail = string.Empty;
