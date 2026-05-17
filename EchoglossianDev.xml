@@ -21635,6 +21635,15 @@
                 Uses the <c>chatgpt.com/backend-api/codex/responses</c> SSE endpoint.
             </summary>
         </member>
+        <member name="M:Echoglossian.Translators.CodexOAuthTranslator.ReadSseResponseAsync(System.Net.Http.HttpResponseMessage)">
+            <summary>
+                Reads the OpenAI Responses API SSE stream and accumulates output_text deltas.
+                Event types we care about:
+                - response.output_text.delta : { delta: "..." }
+                - response.completed         : final marker
+                - response.failed / response.error : surface error
+            </summary>
+        </member>
         <member name="T:Echoglossian.Translators.DeepLTranslator">
             <summary>
                 Provides translation services using the DeepL API or Free API based on the

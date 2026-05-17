@@ -28,10 +28,12 @@ public class CodexOAuthTranslator : ITranslator
     {
         this.pluginLog = pluginLog;
         this.oauthProvider = oauthProvider;
-        this.model = config.CodexOAuthModel ?? "gpt-4o";
+        this.model = config.CodexOAuthModel ?? "gpt-5.5";
 
         this.httpClient = new HttpClient();
         this.httpClient.DefaultRequestHeaders.Add("User-Agent", "codex-cli/0.1.2505161131");
+        this.httpClient.DefaultRequestHeaders.Add("Accept", "text/event-stream");
+        this.httpClient.DefaultRequestHeaders.Add("originator", "codex_cli_rs");
     }
 
     public string Translate(string text, string sourceLanguage, string targetLanguage) =>
@@ -66,11 +68,30 @@ public class CodexOAuthTranslator : ITranslator
         var systemPrompt = BuildSystemPrompt(sourceLanguage, targetLanguage);
         var userMessage = $"Translate this text: \"{fixedText}\"";
 
+        // codex-rs ResponsesApiRequest shape (codex-rs/codex-api/src/common.rs).
+        // input is an array of ResponseItem; stream + store + tool fields are required.
         var requestBody = new
         {
             model = this.model,
             instructions = systemPrompt,
-            input = userMessage,
+            input = new[]
+            {
+                new
+                {
+                    type = "message",
+                    role = "user",
+                    content = new[]
+                    {
+                        new { type = "input_text", text = userMessage },
+                    },
+                },
+            },
+            tools = Array.Empty<object>(),
+            tool_choice = "auto",
+            parallel_tool_calls = false,
+            store = false,
+            stream = true,
+            include = Array.Empty<string>(),
         };
 
         var jsonContent = JsonConvert.SerializeObject(requestBody);
@@ -95,7 +116,9 @@ public class CodexOAuthTranslator : ITranslator
                 request.Headers.Add("OpenAI-Beta", "responses=experimental");
                 request.Content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                using var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
+                using var response = await this.httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && retry == 0)
                 {
@@ -116,25 +139,24 @@ public class CodexOAuthTranslator : ITranslator
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    if (retry < this.maxRetries)
+                    var errBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var snippet = errBody.Length > 400 ? errBody[..400] : errBody;
+                    PluginRuntimeLog.Error(
+                        this.pluginLog,
+                        $"[CodexOAuth] {response.StatusCode}: {snippet}");
+
+                    if (retry < this.maxRetries
+                        && response.StatusCode >= System.Net.HttpStatusCode.InternalServerError)
                     {
                         var backoff = this.initialBackoff * Math.Pow(2, retry);
                         await Task.Delay(backoff).ConfigureAwait(false);
                         continue;
                     }
 
-                    PluginRuntimeLog.Error(
-                        this.pluginLog,
-                        $"[CodexOAuth] Request failed after retries: {response.StatusCode}");
                     return $"[{Resources.TranslationError} CodexOAuth {response.StatusCode}]";
                 }
 
-                var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var responseObject = JObject.Parse(responseString);
-
-                // Responses API: output[0].content[0].text
-                var translatedText = responseObject["output"]?[0]?["content"]?[0]?["text"]
-                    ?.Value<string>()?.Trim();
+                var translatedText = await ReadSseResponseAsync(response).ConfigureAwait(false);
 
                 if (string.IsNullOrEmpty(translatedText))
                 {
@@ -186,4 +208,70 @@ public class CodexOAuthTranslator : ITranslator
         $"Translate the provided text from {sourceLanguage} to {targetLanguage}. " +
         $"Preserve the original tone, personality, and FFXIV-specific terminology. " +
         $"Respond with only the translated text — no explanations, no quotation marks.";
+
+    /// <summary>
+    ///     Reads the OpenAI Responses API SSE stream and accumulates output_text deltas.
+    ///     Event types we care about:
+    ///     - response.output_text.delta : { delta: "..." }
+    ///     - response.completed         : final marker
+    ///     - response.failed / response.error : surface error
+    /// </summary>
+    private static async Task<string> ReadSseResponseAsync(HttpResponseMessage response)
+    {
+        await using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        var sb = new StringBuilder();
+
+        while (true)
+        {
+            var line = await reader.ReadLineAsync().ConfigureAwait(false);
+            if (line == null)
+            {
+                break;
+            }
+
+            if (!line.StartsWith("data: ", StringComparison.Ordinal))
+            {
+                continue;
+            }
+
+            var data = line["data: ".Length..];
+            if (data == "[DONE]")
+            {
+                break;
+            }
+
+            JObject evt;
+            try
+            {
+                evt = JObject.Parse(data);
+            }
+            catch (JsonException)
+            {
+                continue;
+            }
+
+            var type = evt["type"]?.Value<string>();
+            if (type == "response.output_text.delta")
+            {
+                var delta = evt["delta"]?.Value<string>();
+                if (!string.IsNullOrEmpty(delta))
+                {
+                    sb.Append(delta);
+                }
+            }
+            else if (type == "response.completed")
+            {
+                // Optional: full output is in evt["response"]["output"]; we already accumulated deltas.
+                break;
+            }
+            else if (type == "response.failed" || type == "response.error")
+            {
+                break;
+            }
+        }
+
+        return sb.ToString().Trim();
+    }
 }

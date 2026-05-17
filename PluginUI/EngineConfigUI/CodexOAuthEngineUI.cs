@@ -138,15 +138,6 @@ public static class CodexOAuthEngineUI
 
         ImGui.Spacing();
 
-        // ── Prompt editor ────────────────────────────────────────────────────
-        PromptEditorUI.Draw(
-            promptManager,
-            Echoglossian.PromptType.CodexOAuth,
-            PromptTemplateManager.DefaultPrompt,
-            Echoglossian.TransEngines.CodexOAuth.ToString());
-
-        ImGui.Spacing();
-
         // ── Test connection ──────────────────────────────────────────────────
         if (isSignedIn)
         {

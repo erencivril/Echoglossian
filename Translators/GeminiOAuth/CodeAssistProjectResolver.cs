@@ -80,6 +80,15 @@ internal sealed class CodeAssistProjectResolver
 
         var json = await response.Content.ReadAsStringAsync(ct).ConfigureAwait(false);
         var root = JObject.Parse(json);
+
+        // Log which tier the user is on — paidTier means Google AI Pro / Code Assist Standard.
+        var paidTierId = root["paidTier"]?["id"]?.Value<string>();
+        var currentTierId = root["currentTier"]?["id"]?.Value<string>();
+        var effectiveTier = paidTierId ?? currentTierId ?? "(unknown)";
+        PluginRuntimeLog.Information(
+            this.log,
+            $"[GeminiOAuth] User tier: {effectiveTier} (paid={paidTierId ?? "none"}, current={currentTierId ?? "none"})");
+
         return root["cloudaicompanionProject"]?.Value<string>();
     }
 

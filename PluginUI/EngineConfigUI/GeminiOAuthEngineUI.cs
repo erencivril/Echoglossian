@@ -138,15 +138,6 @@ public static class GeminiOAuthEngineUI
 
         ImGui.Spacing();
 
-        // ── Prompt editor ────────────────────────────────────────────────────
-        PromptEditorUI.Draw(
-            promptManager,
-            Echoglossian.PromptType.GeminiOAuth,
-            PromptTemplateManager.DefaultPrompt,
-            Echoglossian.TransEngines.GeminiOAuth.ToString());
-
-        ImGui.Spacing();
-
         // ── Test connection ──────────────────────────────────────────────────
         if (isSignedIn)
         {
