@@ -21777,6 +21777,12 @@
                 (Gemini Code Assist / Google AI Pro subscription — no per-token API billing).
             </summary>
         </member>
+        <member name="M:Echoglossian.Translators.GeminiOAuthTranslator.ReadCodeAssistSseAsync(System.Net.Http.HttpResponseMessage)">
+            <summary>
+                Reads Code Assist :streamGenerateContent SSE stream and accumulates
+                text from every chunk's response.candidates[0].content.parts[0].text.
+            </summary>
+        </member>
         <member name="T:Echoglossian.Translators.GeminiOAuth.CodeAssistProjectResolver">
             <summary>
                 Resolves the Gemini Code Assist cloudaicompanionProject ID for the signed-in user.

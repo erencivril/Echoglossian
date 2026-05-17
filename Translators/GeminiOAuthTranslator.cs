@@ -25,14 +25,21 @@ public class GeminiOAuthTranslator : ITranslator
 
     // Gemini Code Assist endpoint — required for personal Google accounts (OAuth tokens).
     // Standard generativelanguage.googleapis.com returns 403 for these tokens.
+    // We use :streamGenerateContent (SSE) instead of :generateContent because only the
+    // streaming variant accepts enabled_credit_types, which is what unlocks the
+    // Google AI Pro / Google One AI paid quota — see gemini-cli's server.ts.
     private const string GenerateContentUrl =
-        "https://cloudcode-pa.googleapis.com/v1internal:generateContent";
+        "https://cloudcode-pa.googleapis.com/v1internal:streamGenerateContent?alt=sse";
+
+    // CreditType that lets Google AI Pro / Google One AI subscribers use their paid
+    // quota instead of the strict Code Assist free tier (gemini-cli/billing.ts).
+    private const string GoogleOneAiCreditType = "GOOGLE_ONE_AI";
 
     public GeminiOAuthTranslator(IPluginLog pluginLog, Config config, IOAuthTokenProvider oauthProvider)
     {
         this.pluginLog = pluginLog;
         this.oauthProvider = oauthProvider;
-        this.model = config.GeminiOAuthModel ?? "gemini-2.5-flash";
+        this.model = config.GeminiOAuthModel ?? "gemini-3.1-pro-preview";
         this.temperature = config.GeminiTemperature;
 
         this.httpClient = new HttpClient();
@@ -99,14 +106,20 @@ public class GeminiOAuthTranslator : ITranslator
                         },
                         generationConfig = new { temperature = this.temperature },
                     },
+                    // Unlocks paid Google AI Pro quota (gemini-cli passes this on every stream call).
+                    enabled_credit_types = new[] { GoogleOneAiCreditType },
                 };
                 var jsonContent = JsonConvert.SerializeObject(requestBody);
 
                 using var request = new HttpRequestMessage(HttpMethod.Post, GenerateContentUrl);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+                request.Headers.Accept.Clear();
+                request.Headers.Accept.Add(new MediaTypeWithQualityHeaderValue("text/event-stream"));
                 request.Content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
-                var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);
+                var response = await this.httpClient.SendAsync(
+                    request,
+                    HttpCompletionOption.ResponseHeadersRead).ConfigureAwait(false);
 
                 if (response.StatusCode == System.Net.HttpStatusCode.Unauthorized && retry == 0)
                 {
@@ -138,27 +151,24 @@ public class GeminiOAuthTranslator : ITranslator
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    if (retry < this.maxRetries)
+                    var errBody = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
+                    var snippet = errBody.Length > 400 ? errBody[..400] : errBody;
+                    PluginRuntimeLog.Error(
+                        this.pluginLog,
+                        $"[GeminiOAuth] {response.StatusCode}: {snippet}");
+
+                    if (retry < this.maxRetries
+                        && response.StatusCode >= System.Net.HttpStatusCode.InternalServerError)
                     {
                         var backoff = this.initialBackoff * Math.Pow(2, retry);
                         await Task.Delay(backoff).ConfigureAwait(false);
                         continue;
                     }
 
-                    PluginRuntimeLog.Error(
-                        this.pluginLog,
-                        $"[GeminiOAuth] Request failed after retries: {response.StatusCode}");
                     return $"[{Resources.TranslationError} GeminiOAuth {response.StatusCode}]";
                 }
 
-                var responseString = await response.Content.ReadAsStringAsync().ConfigureAwait(false);
-                var responseObject = JObject.Parse(responseString);
-
-                // Code Assist wraps the result in a "response" envelope.
-                var candidatesNode = responseObject["response"]?["candidates"]
-                    ?? responseObject["candidates"];
-                var translatedText = candidatesNode?[0]?["content"]?["parts"]?[0]?["text"]
-                    ?.ToString().Trim();
+                var translatedText = await ReadCodeAssistSseAsync(response).ConfigureAwait(false);
 
                 if (string.IsNullOrEmpty(translatedText))
                 {
@@ -222,4 +232,92 @@ public class GeminiOAuthTranslator : ITranslator
 Text to translate: ""{text}""
 
 Please provide only the translated text in your response, without any explanations, additional comments, or quotation marks.";
+
+    /// <summary>
+    ///     Reads Code Assist :streamGenerateContent SSE stream and accumulates
+    ///     text from every chunk's response.candidates[0].content.parts[0].text.
+    /// </summary>
+    private static async Task<string> ReadCodeAssistSseAsync(HttpResponseMessage response)
+    {
+        await using var stream = await response.Content.ReadAsStreamAsync().ConfigureAwait(false);
+        using var reader = new StreamReader(stream, Encoding.UTF8);
+
+        var sb = new StringBuilder();
+        var dataBuffer = new StringBuilder();
+
+        while (true)
+        {
+            var line = await reader.ReadLineAsync().ConfigureAwait(false);
+            if (line == null)
+            {
+                break;
+            }
+
+            if (line.Length == 0)
+            {
+                // End of event — parse accumulated data.
+                if (dataBuffer.Length > 0)
+                {
+                    AppendCandidatesText(sb, dataBuffer.ToString());
+                    dataBuffer.Clear();
+                }
+                continue;
+            }
+
+            if (line.StartsWith("data: ", StringComparison.Ordinal))
+            {
+                dataBuffer.Append(line["data: ".Length..]);
+            }
+            else if (line.StartsWith("data:", StringComparison.Ordinal))
+            {
+                dataBuffer.Append(line["data:".Length..]);
+            }
+        }
+
+        // Flush trailing event (no terminating blank line).
+        if (dataBuffer.Length > 0)
+        {
+            AppendCandidatesText(sb, dataBuffer.ToString());
+        }
+
+        return sb.ToString().Trim();
+    }
+
+    private static void AppendCandidatesText(StringBuilder sink, string json)
+    {
+        JObject root;
+        try
+        {
+            root = JObject.Parse(json);
+        }
+        catch (JsonException)
+        {
+            return;
+        }
+
+        // Code Assist envelope: { response: { candidates: [ { content: { parts: [{text}] } } ] } }
+        var candidatesNode = root["response"]?["candidates"] ?? root["candidates"];
+        if (candidatesNode is not JArray candidates)
+        {
+            return;
+        }
+
+        foreach (var candidate in candidates)
+        {
+            var parts = candidate["content"]?["parts"] as JArray;
+            if (parts == null)
+            {
+                continue;
+            }
+
+            foreach (var part in parts)
+            {
+                var text = part["text"]?.Value<string>();
+                if (!string.IsNullOrEmpty(text))
+                {
+                    sink.Append(text);
+                }
+            }
+        }
+    }
 }
