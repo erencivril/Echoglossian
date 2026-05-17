@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <doc>
     <assembly>
-        <name>Echoglossian</name>
+        <name>EchoglossianDev</name>
     </assembly>
     <members>
         <member name="T:Echoglossian.Cache.ActionTooltipCacheManager">
@@ -1456,6 +1456,9 @@
         </member>
         <member name="F:Echoglossian.Config.GeminiOAuthPrompt">
             <summary>Custom prompt template for GeminiOAuth translations.</summary>
+        </member>
+        <member name="F:Echoglossian.Config.GeminiOAuthCachedProjectId">
+            <summary>Cached Gemini Code Assist project ID (cloudaicompanionProject) to avoid repeated loadCodeAssist calls.</summary>
         </member>
         <member name="F:Echoglossian.Config.CodexOAuthModel">
             <summary>Model ID used for CodexOAuth translations.</summary>
@@ -21343,6 +21346,13 @@
                 <see langword="null"/> if not signed in.
             </summary>
         </member>
+        <member name="M:Echoglossian.Services.OAuth.IOAuthTokenProvider.GetChatGptAccountId(Echoglossian.Services.OAuth.OAuthProvider)">
+            <summary>
+                Returns the ChatGPT workspace/account ID extracted from the id_token,
+                or <see langword="null"/> when not signed in or when the token does not
+                belong to a ChatGPT subscription.
+            </summary>
+        </member>
         <member name="T:Echoglossian.Services.OAuth.OAuthException">
             <summary>
                 Raised when an OAuth flow fails.
@@ -21396,6 +21406,9 @@
         <member name="M:Echoglossian.Services.OAuth.OAuthTokenProvider.GetAccountEmail(Echoglossian.Services.OAuth.OAuthProvider)">
             <inheritdoc/>
         </member>
+        <member name="M:Echoglossian.Services.OAuth.OAuthTokenProvider.GetChatGptAccountId(Echoglossian.Services.OAuth.OAuthProvider)">
+            <inheritdoc/>
+        </member>
         <member name="T:Echoglossian.Services.OAuth.OAuthTokens">
             <summary>
                 Holds the tokens received after a successful OAuth authorization.
@@ -21410,6 +21423,14 @@
         <member name="P:Echoglossian.Services.OAuth.OAuthTokens.AccountEmail">
             <summary>
                 Email address of the signed-in account (populated after fetching user info).
+            </summary>
+        </member>
+        <member name="P:Echoglossian.Services.OAuth.OAuthTokens.ChatGptAccountId">
+            <summary>
+                ChatGPT workspace/account ID extracted from the id_token's
+                <c>https://api.openai.com/auth.chatgpt_account_id</c> claim.
+                Required as <c>ChatGPT-Account-ID</c> header when calling the
+                <c>chatgpt.com/backend-api/codex/responses</c> endpoint.
             </summary>
         </member>
         <member name="M:Echoglossian.Services.OAuth.OAuthTokens.WithEmail(System.String)">
@@ -21439,6 +21460,13 @@
             <summary>
                 Decodes the id_token JWT payload to extract the account e-mail.
                 No signature verification is needed here — we trust our own token.
+            </summary>
+        </member>
+        <member name="M:Echoglossian.Services.OAuth.OpenAIOAuthClient.ExtractChatGptAccountIdFromIdToken(System.String)">
+            <summary>
+                Decodes the id_token JWT payload to extract the ChatGPT account ID
+                required for the <c>ChatGPT-Account-ID</c> header on the codex
+                backend-api responses endpoint.
             </summary>
         </member>
         <member name="T:Echoglossian.Services.OAuth.PkceHelper">
@@ -21607,12 +21635,6 @@
                 Uses the <c>chatgpt.com/backend-api/codex/responses</c> SSE endpoint.
             </summary>
         </member>
-        <member name="M:Echoglossian.Translators.CodexOAuthTranslator.ReadSseResponseAsync(System.Net.Http.HttpResponseMessage)">
-            <summary>
-                Reads a Server-Sent Events response stream and accumulates the translated text
-                from <c>response.output_text.delta</c> events.
-            </summary>
-        </member>
         <member name="T:Echoglossian.Translators.DeepLTranslator">
             <summary>
                 Provides translation services using the DeepL API or Free API based on the
@@ -21744,6 +21766,19 @@
             <summary>
                 Translates game text using the Google Gemini API authenticated via OAuth
                 (Gemini Code Assist / Google AI Pro subscription — no per-token API billing).
+            </summary>
+        </member>
+        <member name="T:Echoglossian.Translators.GeminiOAuth.CodeAssistProjectResolver">
+            <summary>
+                Resolves the Gemini Code Assist cloudaicompanionProject ID for the signed-in user.
+                Calls :loadCodeAssist once; caches the result in Config to avoid redundant network trips.
+                If the user has no project (first-time), calls :onboardUser with the free tier.
+            </summary>
+        </member>
+        <member name="M:Echoglossian.Translators.GeminiOAuth.CodeAssistProjectResolver.ResolveProjectIdAsync(System.String,System.Threading.CancellationToken)">
+            <summary>
+                Returns the cloudaicompanionProject string required for Code Assist API calls.
+                Uses cached value when available; otherwise discovers/provisions via the API.
             </summary>
         </member>
         <member name="M:Echoglossian.Translators.GeminiTranslator.TranslateCoreAsync(System.String,System.String,System.String,System.String)">
@@ -22402,9 +22437,9 @@
             Extension methods for discovered service registrations
             </summary>
         </member>
-        <member name="M:Microsoft.Extensions.DependencyInjection.DiscoveredServicesExtensions.AddEchoglossian(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String[])">
+        <member name="M:Microsoft.Extensions.DependencyInjection.DiscoveredServicesExtensions.AddEchoglossianDev(Microsoft.Extensions.DependencyInjection.IServiceCollection,System.String[])">
             <summary>
-            Adds discovered services from Echoglossian to the specified service collection
+            Adds discovered services from EchoglossianDev to the specified service collection
             </summary>
             <param name="serviceCollection">The service collection.</param>
             <param name="tags">The service registration tags to include.</param>

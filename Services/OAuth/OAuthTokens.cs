@@ -38,6 +38,15 @@ public sealed class OAuthTokens
     [JsonProperty("account_email")]
     public string? AccountEmail { get; set; }
 
+    /// <summary>
+    ///     ChatGPT workspace/account ID extracted from the id_token's
+    ///     <c>https://api.openai.com/auth.chatgpt_account_id</c> claim.
+    ///     Required as <c>ChatGPT-Account-ID</c> header when calling the
+    ///     <c>chatgpt.com/backend-api/codex/responses</c> endpoint.
+    /// </summary>
+    [JsonProperty("chatgpt_account_id")]
+    public string? ChatGptAccountId { get; set; }
+
     [JsonIgnore]
     public bool IsExpired => DateTimeOffset.UtcNow >= this.ExpiresAt;
 

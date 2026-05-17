@@ -89,7 +89,10 @@ public sealed class OpenAIOAuthClient
         }
 
         var json = await response.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
-        return ParseTokenResponse(json, current.RefreshToken, current.AccountEmail);
+        var refreshed = ParseTokenResponse(json, current.RefreshToken, current.AccountEmail);
+        // Preserve workspace ID across refresh when the new token didn't include id_token.
+        refreshed.ChatGptAccountId ??= current.ChatGptAccountId;
+        return refreshed;
     }
 
     /// <summary>
@@ -97,6 +100,29 @@ public sealed class OpenAIOAuthClient
     ///     No signature verification is needed here — we trust our own token.
     /// </summary>
     public static string? ExtractEmailFromIdToken(string? idToken)
+    {
+        var doc = DecodeIdTokenPayload(idToken);
+        if (doc == null)
+        {
+            return null;
+        }
+
+        return doc["email"]?.Value<string>()
+            ?? doc["https://api.openai.com/profile"]?["email"]?.Value<string>();
+    }
+
+    /// <summary>
+    ///     Decodes the id_token JWT payload to extract the ChatGPT account ID
+    ///     required for the <c>ChatGPT-Account-ID</c> header on the codex
+    ///     backend-api responses endpoint.
+    /// </summary>
+    public static string? ExtractChatGptAccountIdFromIdToken(string? idToken)
+    {
+        var doc = DecodeIdTokenPayload(idToken);
+        return doc?["https://api.openai.com/auth"]?["chatgpt_account_id"]?.Value<string>();
+    }
+
+    private static JObject? DecodeIdTokenPayload(string? idToken)
     {
         if (string.IsNullOrEmpty(idToken))
         {
@@ -112,12 +138,10 @@ public sealed class OpenAIOAuthClient
             }
 
             var payload = parts[1];
-            // Base64url → Base64 padding
-            var padded = payload.PadRight(payload.Length + (4 - payload.Length % 4) % 4, '=');
+            var padded = payload.PadRight(payload.Length + ((4 - (payload.Length % 4)) % 4), '=');
             var bytes = Convert.FromBase64String(padded.Replace('-', '+').Replace('_', '/'));
             var jsonStr = Encoding.UTF8.GetString(bytes);
-            var doc = JObject.Parse(jsonStr);
-            return doc["email"]?.Value<string>();
+            return JObject.Parse(jsonStr);
         }
         catch
         {
@@ -163,6 +187,7 @@ public sealed class OpenAIOAuthClient
         var refreshToken = root["refresh_token"]?.Value<string>() ?? fallbackRefresh;
         var idToken = root["id_token"]?.Value<string>();
         var email = ExtractEmailFromIdToken(idToken) ?? fallbackEmail;
+        var chatgptAccountId = ExtractChatGptAccountIdFromIdToken(idToken);
 
         return new OAuthTokens
         {
@@ -173,6 +198,7 @@ public sealed class OpenAIOAuthClient
             Scope = root["scope"]?.Value<string>(),
             ExpiresAt = DateTimeOffset.UtcNow.AddSeconds(expiresIn),
             AccountEmail = email,
+            ChatGptAccountId = chatgptAccountId,
         };
     }
 }

@@ -44,4 +44,11 @@ public interface IOAuthTokenProvider
     ///     <see langword="null"/> if not signed in.
     /// </summary>
     string? GetAccountEmail(OAuthProvider provider);
+
+    /// <summary>
+    ///     Returns the ChatGPT workspace/account ID extracted from the id_token,
+    ///     or <see langword="null"/> when not signed in or when the token does not
+    ///     belong to a ChatGPT subscription.
+    /// </summary>
+    string? GetChatGptAccountId(OAuthProvider provider);
 }

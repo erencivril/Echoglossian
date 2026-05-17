@@ -14,7 +14,7 @@ namespace Echoglossian.Translators;
 /// </summary>
 public class CodexOAuthTranslator : ITranslator
 {
-    private const string ResponsesEndpoint = "https://api.openai.com/v1/responses";
+    private const string ResponsesEndpoint = "https://chatgpt.com/backend-api/codex/responses";
 
     private readonly HttpClient httpClient;
     private readonly TimeSpan initialBackoff = TimeSpan.FromSeconds(1);
@@ -84,6 +84,15 @@ public class CodexOAuthTranslator : ITranslator
 
                 using var request = new HttpRequestMessage(HttpMethod.Post, ResponsesEndpoint);
                 request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", accessToken);
+
+                // Required for chatgpt.com/backend-api: pin the workspace from the JWT.
+                var accountId = this.oauthProvider.GetChatGptAccountId(OAuthProvider.OpenAI);
+                if (!string.IsNullOrEmpty(accountId))
+                {
+                    request.Headers.Add("ChatGPT-Account-ID", accountId);
+                }
+
+                request.Headers.Add("OpenAI-Beta", "responses=experimental");
                 request.Content = new StringContent(jsonContent, Encoding.UTF8, "application/json");
 
                 using var response = await this.httpClient.SendAsync(request).ConfigureAwait(false);

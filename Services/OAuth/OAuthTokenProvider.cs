@@ -93,6 +93,24 @@ public sealed class OAuthTokenProvider : IOAuthTokenProvider, IDisposable
 
         this.Persist(provider, tokens);
         PluginRuntimeLog.Information(this.log, $"[OAuthTokenProvider] Signed in to {provider} as {tokens.AccountEmail}.");
+
+        if (provider == OAuthProvider.OpenAI)
+        {
+            if (string.IsNullOrEmpty(tokens.ChatGptAccountId))
+            {
+                PluginRuntimeLog.Warning(
+                    this.log,
+                    "[OAuthTokenProvider] Sign-in succeeded but no chatgpt_account_id was returned. " +
+                    "Codex backend requires this — translation requests will fail.");
+            }
+            else
+            {
+                PluginRuntimeLog.Information(
+                    this.log,
+                    $"[OAuthTokenProvider] ChatGPT workspace ID resolved: {tokens.ChatGptAccountId}");
+            }
+        }
+
         return tokens.AccountEmail ?? string.Empty;
     }
 
@@ -111,6 +129,10 @@ public sealed class OAuthTokenProvider : IOAuthTokenProvider, IDisposable
     /// <inheritdoc/>
     public string? GetAccountEmail(OAuthProvider provider) =>
         this.tokenCache.TryGetValue(provider, out var t) ? t?.AccountEmail : null;
+
+    /// <inheritdoc/>
+    public string? GetChatGptAccountId(OAuthProvider provider) =>
+        this.tokenCache.TryGetValue(provider, out var t) ? t?.ChatGptAccountId : null;
 
     public void Dispose()
     {

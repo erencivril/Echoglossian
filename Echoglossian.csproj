@@ -10,7 +10,8 @@
   <PropertyGroup>
     <TargetFramework>net10.0-windows</TargetFramework>
     <RuntimeIdentifier>win-x64</RuntimeIdentifier>
-    <AssemblyName>Echoglossian</AssemblyName>
+    <AssemblyName>EchoglossianDev</AssemblyName>
+    <RootNamespace>Echoglossian</RootNamespace>
     <Platforms>x64</Platforms>
     <Authors>lokinmodar</Authors>
     <NeutralLanguage>en</NeutralLanguage>

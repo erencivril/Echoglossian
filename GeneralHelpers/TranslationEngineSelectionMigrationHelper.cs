@@ -124,7 +124,7 @@ internal static class TranslationEngineSelectionMigrationHelper
   internal static bool IsConcreteEngineId(int engineId)
   {
     return engineId >= (int)Echoglossian.TransEngines.Google &&
-           engineId <= (int)Echoglossian.TransEngines.Claude;
+           engineId <= (int)Echoglossian.TransEngines.CodexOAuth;
   }
 
   /// <summary>
