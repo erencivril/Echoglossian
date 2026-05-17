@@ -1460,6 +1460,11 @@
         <member name="F:Echoglossian.Config.GeminiOAuthCachedProjectId">
             <summary>Cached Gemini Code Assist project ID (cloudaicompanionProject) to avoid repeated loadCodeAssist calls.</summary>
         </member>
+        <member name="F:Echoglossian.Config.GeminiOAuthAutoRouteByLength">
+            <summary>When enabled, picks Flash Lite for short text, Flash for medium, and the
+            dropdown-selected model for long text — saves cost and latency without
+            noticeable quality loss for typical dialog.</summary>
+        </member>
         <member name="F:Echoglossian.Config.CodexOAuthModel">
             <summary>Model ID used for CodexOAuth translations.</summary>
         </member>
@@ -21795,6 +21800,22 @@
                 Returns the cloudaicompanionProject string required for Code Assist API calls.
                 Uses cached value when available; otherwise discovers/provisions via the API.
             </summary>
+        </member>
+        <member name="T:Echoglossian.Translators.GeminiOAuth.GeminiOAuthModelRouter">
+            <summary>
+                Picks the cheapest Gemini variant capable of translating a given piece of game
+                text. Short NPC barks go to Flash Lite (fast + cheap); medium dialog goes to
+                Flash; long cutscene narration falls back to the user-selected model
+                (typically Pro) for the quality bump that long passages benefit from.
+            </summary>
+        </member>
+        <member name="M:Echoglossian.Translators.GeminiOAuth.GeminiOAuthModelRouter.Route(System.String,System.String,System.Boolean)">
+            <summary>
+                Returns the model that should service this translation.
+            </summary>
+            <param name="text">The source text about to be translated.</param>
+            <param name="fallbackModel">User-selected model from the settings dropdown.</param>
+            <param name="autoRouteEnabled">Master switch for auto-routing.</param>
         </member>
         <member name="M:Echoglossian.Translators.GeminiTranslator.TranslateCoreAsync(System.String,System.String,System.String,System.String)">
             <summary>

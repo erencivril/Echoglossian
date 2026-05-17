@@ -249,6 +249,11 @@ public class Config : IPluginConfiguration
   /// <summary>Cached Gemini Code Assist project ID (cloudaicompanionProject) to avoid repeated loadCodeAssist calls.</summary>
   [DefaultValue(null)] public string? GeminiOAuthCachedProjectId = null;
 
+  /// <summary>When enabled, picks Flash Lite for short text, Flash for medium, and the
+  /// dropdown-selected model for long text — saves cost and latency without
+  /// noticeable quality loss for typical dialog.</summary>
+  [DefaultValue(true)] public bool GeminiOAuthAutoRouteByLength = true;
+
   // ─── CodexOAuth (OAuth-authenticated OpenAI Codex — no API key) ─────────────
 
   /// <summary>Model ID used for CodexOAuth translations.</summary>

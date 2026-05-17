@@ -122,12 +122,34 @@ public static class GeminiOAuthEngineUI
         ImGui.Separator();
         ImGui.Spacing();
 
+        // ── Auto-routing toggle ──────────────────────────────────────────────
+        var autoRoute = config.GeminiOAuthAutoRouteByLength;
+        if (ImGui.Checkbox("Auto-select model by text length (recommended)", ref autoRoute))
+        {
+            config.GeminiOAuthAutoRouteByLength = autoRoute;
+            changed = true;
+        }
+
+        if (ImGui.IsItemHovered())
+        {
+            ImGui.SetTooltip(
+                "Short text (<50 chars) -> Flash Lite (fastest, cheapest)\n" +
+                "Medium text (<250 chars) -> Flash\n" +
+                "Long text (>=250 chars) -> the model picked below");
+        }
+
+        ImGui.Spacing();
+
         // ── Model selection ──────────────────────────────────────────────────
         var models = GeminiOAuthTextModelDefaults.PredefinedModels;
         var modelId = config.GeminiOAuthModel ?? GeminiOAuthTextModelDefaults.DefaultModelId;
 
+        var dropdownLabel = autoRoute
+            ? "Model for long passages (>=250 chars)"
+            : Resources.LLMModel;
+
         if (ModelDropdownUI.Draw(
-                Resources.LLMModel,
+                dropdownLabel,
                 ref modelId,
                 models,
                 "GeminiOAuth"))

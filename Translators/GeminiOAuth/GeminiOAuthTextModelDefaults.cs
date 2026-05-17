@@ -23,8 +23,8 @@ public static class GeminiOAuthTextModelDefaults
             IsDefault: true,
             "GeminiOAuth"),
         new LlmTextModel(
-            "gemini-3-flash-preview",
-            "🔶 Gemini 3 Flash (Preview)",
+            "gemini-3.1-flash-preview",
+            "🔶 Gemini 3.1 Flash (Preview)",
             true,
             false,
             true,

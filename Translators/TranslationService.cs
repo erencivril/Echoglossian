@@ -333,8 +333,17 @@ public class TranslationService
       return (sanitizedString, false);
     }
 
+    // Pure punctuation / whitespace / musical glyphs — no semantic content to translate.
+    if (PunctuationOnlyPattern.IsMatch(sanitizedString))
+    {
+      return (sanitizedString, false);
+    }
+
     return (sanitizedString, true);
   }
+
+  private static readonly Regex PunctuationOnlyPattern =
+      new(@"^[\s\p{P}\p{S}♪♫]+$", RegexOptions.Compiled | RegexOptions.CultureInvariant);
 
   /// <summary>
   ///     Determines whether the given exact translation request is already

@@ -17,6 +17,7 @@ public class GeminiOAuthTranslator : ITranslator
     private readonly TimeSpan initialBackoff = TimeSpan.FromSeconds(1);
     private readonly int maxRetries = 3;
     private readonly string model;
+    private readonly bool autoRouteByLength;
     private readonly IOAuthTokenProvider oauthProvider;
     private readonly IPluginLog pluginLog;
     private readonly float temperature = 0.1f;
@@ -40,6 +41,7 @@ public class GeminiOAuthTranslator : ITranslator
         this.pluginLog = pluginLog;
         this.oauthProvider = oauthProvider;
         this.model = config.GeminiOAuthModel ?? "gemini-3.1-pro-preview";
+        this.autoRouteByLength = config.GeminiOAuthAutoRouteByLength;
         this.temperature = config.GeminiTemperature;
 
         this.httpClient = new HttpClient();
@@ -58,7 +60,8 @@ public class GeminiOAuthTranslator : ITranslator
             return Resources.GeminiOAuthNotSignedIn;
         }
 
-        var cacheKey = $"{text}_{sourceLanguage}_{targetLanguage}_{this.model}";
+        var effectiveModel = GeminiOAuthModelRouter.Route(text, this.model, this.autoRouteByLength);
+        var cacheKey = $"{text}_{sourceLanguage}_{targetLanguage}_{effectiveModel}";
         if (this.translationCache.TryGetValue(cacheKey, out var cached))
         {
             return cached;
@@ -66,7 +69,7 @@ public class GeminiOAuthTranslator : ITranslator
 
         return await this.translationCache.GetOrAddAsync(
             cacheKey,
-            () => this.TranslateCoreAsync(text, sourceLanguage, targetLanguage, cacheKey))
+            () => this.TranslateCoreAsync(text, sourceLanguage, targetLanguage, effectiveModel, cacheKey))
             .ConfigureAwait(false);
     }
 
@@ -74,10 +77,18 @@ public class GeminiOAuthTranslator : ITranslator
         string text,
         string sourceLanguage,
         string targetLanguage,
+        string effectiveModel,
         string cacheKey)
     {
         var fixedText = FixText(text);
         var prompt = BuildTranslationPrompt(fixedText, sourceLanguage, targetLanguage);
+
+        if (!string.Equals(effectiveModel, this.model, StringComparison.Ordinal))
+        {
+            PluginRuntimeLog.Debug(
+                this.pluginLog,
+                $"[GeminiOAuth] Routed {text.Length}-char text to {effectiveModel} (selected: {this.model}).");
+        }
 
         // Request body built after we resolve the project ID (needs access token).
         // jsonContent is deferred inside the retry loop where we have the token.
@@ -95,7 +106,7 @@ public class GeminiOAuthTranslator : ITranslator
 
                 var requestBody = new
                 {
-                    model = this.model,
+                    model = effectiveModel,
                     project = projectId,
                     user_prompt_id = Guid.NewGuid().ToString(),
                     request = new
@@ -217,21 +228,9 @@ public class GeminiOAuthTranslator : ITranslator
     }
 
     private static string BuildTranslationPrompt(string text, string sourceLanguage, string targetLanguage) =>
-        @$"As an expert translator and cultural localization specialist with deep knowledge of video game localization, your task is to translate dialogues from the game Final Fantasy XIV from {sourceLanguage} to {targetLanguage}. This is not just a translation, but a full localization effort tailored for the Final Fantasy XIV universe. Please adhere to the following guidelines:
-
-1. Preserve the original tone, humor, personality, and emotional nuances of the dialogue, considering the unique style and atmosphere of Final Fantasy XIV.
-2. Adapt idioms, cultural references, and wordplay to resonate naturally with native {targetLanguage} speakers while maintaining the fantasy RPG context.
-3. Maintain consistency in character voices, terminology, and naming conventions specific to Final Fantasy XIV throughout the translation.
-4. Avoid literal translations that may lose the original intent or impact, especially for game-specific terms or lore elements.
-5. Ensure the translation flows naturally and reads as if it were originally written in {targetLanguage}, while staying true to the game's narrative style.
-6. Consider the context and subtext of the dialogue, including any references to the game's lore, world, or ongoing storylines.
-7. If a word, phrase, or name has been translated in a specific way, maintain that translation consistently unless the context demands otherwise.
-8. Pay attention to formal/informal speech patterns and adjust accordingly for the target language.
-9. Preserve any game-specific jargon, spell names, or technical terms according to the official localization guidelines for Final Fantasy XIV.
-
-Text to translate: ""{text}""
-
-Please provide only the translated text in your response, without any explanations, additional comments, or quotation marks.";
+        $"You are a Final Fantasy XIV in-game text translator. Translate the following text from " +
+        $"{sourceLanguage} to {targetLanguage}. Preserve names, terminology, tone, and formal/informal " +
+        $"speech. Respond with only the translated text, no quotes or commentary.\n\nText: {text}";
 
     /// <summary>
     ///     Reads Code Assist :streamGenerateContent SSE stream and accumulates
